@@ -13,47 +13,66 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CancellationException;
 import javax.swing.SwingWorker;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
 /**
  *
  * @author florian
  */
-public class Server_GUI extends javax.swing.JFrame
+public class Server_GUI extends javax.swing.JFrame implements ChangeListener
 {
-  private SW sw;
+  private ServerWorker sw;
+  private double value;
   /**
    * Creates new form Server_GUI
    */
   public Server_GUI ()
   {
     initComponents();  
+    jSlider1.addChangeListener(this);
+    jTextField1.setText(String.format("%.1f", value));
   }
-  
-  private class SW extends SwingWorker<Object, Object>
+
+
+  @Override
+  public void stateChanged (ChangeEvent e)
   {
-    private final double d;
-    
-    
-    public SW (double d)
+    if(e.getSource().equals(jSlider1))
     {
-      this.d=d;
+      value=(double) jSlider1.getValue()/10;
+      jTextField1.setText(String.format("%.1f", value));
     }
+  }
+
+  
+  
+  private class ServerWorker extends SwingWorker<Object, Object>
+  {
+    private final int port;
+    private final String request;
+    private final String response;
+
+    public ServerWorker (int port, String requestString, String responsePattern)
+    {
+      this.port = port;
+      this.request = requestString;
+      this.response = responsePattern;
+    }
+    
     
     @Override
     protected Object doInBackground () throws Exception
     {
-      ServerSocket ss = null;
+      ServerSocket ss = new ServerSocket(port);
       Socket socket = null;
+      System.out.println("Server auf Port "+port+" geöffnet");
       
-      while(!isCancelled())
+      try
       {
-        try
-        {
-          ss=new ServerSocket(4711);
-
-          System.out.println("Server auf Port "+4711+" geöffnet");
-
+        while(!isCancelled())
+        {  
           socket=ss.accept();
           System.out.println("Verbindung hergestellt mit "+socket);
 
@@ -61,27 +80,26 @@ public class Server_GUI extends javax.swing.JFrame
           {
             Thread.sleep(50);
             String response=br.readLine();
-            if((response.equals("GET")))
+          
+            if(response.equals(request))
             {
               try(BufferedWriter bw=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())))
               {
-                bw.write(String.format("%.1fV\n", d));
+                bw.write(String.format(this.response, value));
               }
             }
             else
-            {
-              System.out.println("Connection closed; wrong Request: "+response);
-              socket.close();
-            }
+              System.out.println("Connection closed; wrong Request");
+            
+            socket.close();
           }
         }
-        finally
-        {
-          if(!(ss==null))
-            ss.close();
-          if(!(socket==null))
-            socket.close();
-        }
+      }
+      finally
+      {
+        ss.close();
+        if(!(socket==null))
+          socket.close();
       }
       return null;
     }
@@ -168,7 +186,7 @@ public class Server_GUI extends javax.swing.JFrame
 
   private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jTextField1ActionPerformed
   {//GEN-HEADEREND:event_jTextField1ActionPerformed
-    // TODO add your handling code here:
+    
   }//GEN-LAST:event_jTextField1ActionPerformed
 
   private void jButton1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jButton1ActionPerformed
@@ -176,7 +194,7 @@ public class Server_GUI extends javax.swing.JFrame
     if(sw==null)
     {
       jButton1.setText("Close Server");
-      sw=new SW(Double.parseDouble(jTextField1.getText()));
+      sw=new ServerWorker(4711, "GET", "%.1fV\n");
       sw.execute();
     }
     else
