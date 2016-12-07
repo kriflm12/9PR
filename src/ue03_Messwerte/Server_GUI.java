@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ue03_Messwerte;
 
 import java.io.BufferedReader;
@@ -25,9 +20,8 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
 {
   private ServerWorker sw;
   private double value;
-  /**
-   * Creates new form Server_GUI
-   */
+  
+  
   public Server_GUI ()
   {
     initComponents();  
@@ -47,19 +41,19 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
   }
 
   
-  
   private class ServerWorker extends SwingWorker<Object, Object>
   {
     private final int port;
-    private final String request;
+    private final String requestPattern;
     private final String response;
 
+    
     public ServerWorker (int port, String requestString, String responsePattern)
     {
       this.port = port;
-      this.request = requestString;
-      this.response = responsePattern;
-    }
+      this.requestPattern = requestString;
+      this.response = responsePattern; 
+     }
     
     
     @Override
@@ -67,21 +61,19 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
     {
       ServerSocket ss = new ServerSocket(port);
       Socket socket = null;
-      System.out.println("Server auf Port "+port+" geöffnet");
       
       try
       {
         while(!isCancelled())
-        {  
+        { 
           socket=ss.accept();
-          System.out.println("Verbindung hergestellt mit "+socket);
-
+          
           try(BufferedReader br=new BufferedReader(new InputStreamReader(socket.getInputStream())))
           {
             Thread.sleep(50);
-            String response=br.readLine();
+            String request=br.readLine();
           
-            if(response.equals(request))
+            if(request.equals(requestPattern))
             {
               try(BufferedWriter bw=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())))
               {
@@ -97,6 +89,7 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
       }
       finally
       {
+        System.out.println("Close");
         ss.close();
         if(!(socket==null))
           socket.close();
@@ -198,10 +191,7 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
       sw.execute();
     }
     else
-    {
       sw.cancel(true);
-    }
-    
   }//GEN-LAST:event_jButton1ActionPerformed
 
   private void jButton2ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jButton2ActionPerformed
@@ -257,12 +247,9 @@ public class Server_GUI extends javax.swing.JFrame implements ChangeListener
     /*
      * Create and display the form
      */
-    java.awt.EventQueue.invokeLater(new Runnable()
+    java.awt.EventQueue.invokeLater(() ->
     {
-      public void run ()
-      {
-        new Server_GUI().setVisible(true);
-      }
+      new Server_GUI().setVisible(true);
     });
   }
 
